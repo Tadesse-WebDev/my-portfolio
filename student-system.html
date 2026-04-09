@@ -1,259 +1,337 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="am">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grade System v18.8</title>
+    <title>Advanced Student Roster & Report Card</title>
     <style>
-        /* የሲስተሙ ዋና ቀለሞች */
-        :root { --primary: #1a73e8; --success: #28a745; --danger: #dc3545; --bg: #f8f9fa; }
+        :root { --primary: #1a73e8; --success: #188038; --danger: #d93025; --bg: #525659; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 10px; color: #333; }
+        .header-box { background: #fff; padding: 15px; border-bottom: 4px solid var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; }
+        .main-form-container { display: flex; gap: 15px; width: 98%; margin: 0 auto; overflow-x: auto; padding-bottom: 5px; }
+        .panel { padding: 12px; border-radius: 8px; border: 1px solid #ddd; display: flex; flex-wrap: nowrap; gap: 10px; align-items: flex-end; }
+        .panel-one { background: #f8fbff; border-left: 5px solid var(--primary); }
+        .panel-two { background: #f7fff9; border-left: 5px solid var(--success); }
         
-        /* ዋናው መያዣ ሳጥን */
-        .container { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
-        
-        /* መረጃ መሙያ ፎርም ዲዛይን */
-        .setup { background: #eef4ff; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .input-row { display: flex; flex-wrap: wrap; gap: 8px; }
-        input, select { padding: 12px; border: 1px solid #c2d7ff; border-radius: 6px; font-size: 14px; flex: 1; min-width: 120px; }
-        
-        /* የቁልፎች (Buttons) ዲዛይን */
-        .button-row { display: flex; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
-        .btn { flex: 1; padding: 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; font-size: 13px; text-align: center; }
-        .btn-add { background: var(--primary); }
-        .btn-excel { background: var(--success); }
-        .btn-undo { background: #f39c12; }
+        .input-group { display: flex; flex-direction: column; flex-shrink: 0; }
+        label { font-size: 11px; font-weight: bold; margin-bottom: 3px; color: #555; }
+        input, select { padding: 8px; border: 1px solid #dadce0; border-radius: 4px; font-size: 13px; }
 
-        /* ሰንጠረዡ በስልክ በጎን እንዲሳብ የሚያደርግ መያዣ */
-        .table-container { width: 100%; overflow-x: auto; border-radius: 12px; background: white; }
-        
-        /* የሰንጠረዥ ሴሎች እንደ ቃላቱ ርዝመት እንዲለጠጡ (Auto Cell Width) */
-        table { width: 100%; border-collapse: collapse; table-layout: auto; margin-top: 5px; }
-        th, td { 
-            border: 1px solid #dee2e6; 
-            padding: 10px 8px; 
-            text-align: center; 
-            white-space: nowrap; /* ቃላቱ በአንድ መስመር እንዲሆኑና ሴሉን እንዲያስፉ */
-            font-size: 13px; 
-        }
-        th { background: var(--primary); color: white; text-transform: uppercase; }
-        
-        /* ስም፣ ፆታ እና ክፍል የሚገቡባቸው ሴሎች አቀማመጥ */
-        .name-cell, .meta-cell { text-align: left; font-weight: 600; background: #f8fafc; }
-        .name-cell { white-space: normal; min-width: 150px; } /* ስም ረጅም ከሆነ ወደ ታች እንዲወርድ */
+        .toolbar { display: flex; gap: 10px; padding: 10px 20px; background: #e8f0fe; border-bottom: 1px solid #ccc; }
+        .main-viewport { flex: 1; overflow: auto; padding: 20px; }
+        .paper { background: white; border-radius: 4px; box-shadow: 0 0 20px rgba(0,0,0,0.4); min-width: max-content; margin: auto; }
 
-        /* የዓመታዊ ማጠቃለያ ከለር */
-        .grand-summary { background: #fff9db; font-weight: bold; }
-        
-        /* ውጤት መሙያ ሳጥን */
-        input.score { width: 45px; border: 1px solid #ccc; text-align: center; padding: 4px; border-radius: 4px; font-weight: bold; }
-        
-        /* ትናንሽ ቁልፎች */
-        .row-btn { padding: 5px 8px; border: none; border-radius: 4px; cursor: pointer; color: white; font-size: 11px; margin: 2px; }
-        .del-btn { background: var(--danger); }
-        .view-btn { background: #17a2b8; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #000; padding: 10px 15px; text-align: center; font-size: 14px; white-space: nowrap; }
+        thead th { position: sticky; top: 0; background: #f2f2f2; z-index: 10; }
 
-        /* ሪፖርት ካርድ ማሳያ */
-        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 95%; max-width: 700px; max-height: 90vh; overflow-y: auto; }
+        .annual-row { background-color: #fffde7 !important; font-weight: bold; color: #d32f2f; }
+        .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; color: white; transition: 0.2s; }
+        .btn-blue { background: var(--primary); }
+        .btn-green { background: var(--success); }
+        .btn-red { background: var(--danger); }
+        .btn-orange { background: #f29900; }
+
+        .action-cell { display: flex; gap: 5px; justify-content: center; }
+
+        #modalOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1000; justify-content:center; align-items:center; }
+        .modal-box { background:white; border-radius:8px; width: 95%; max-width: 650px; padding: 20px; max-height: 95vh; overflow-y: auto; }
+
+        .card-table { width: 100%; max-width: 600px; margin: 0 auto; border-collapse: collapse; }
+        .card-table th, .card-table td { padding: 8px 4px; font-size: 13px; border: 1px solid #000; text-align: center; }
         
-        @media print { .no-print { display: none !important; } }
+        @media print { .no-print { display: none !important; } body { background: white; } .paper { box-shadow: none; } }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Student Management System</h2>
-    
-    <div class="setup no-print">
-        <div class="input-row">
-            <input type="text" id="stdName" placeholder="Full Name">
-            <select id="stdSex">
-                <option value="M">Male</option>
-                <option value="F">Female</option>
-            </select>
-            <input type="text" id="stdClass" placeholder="Class (e.g. 8A)">
+<div class="header-box no-print">
+    <div class="main-form-container">
+        <div class="panel panel-one">
+            <div class="input-group"><label>School Name</label><input type="text" id="schName" value="ደሊጀንት ኢንቴሌክሽዋል አካዳሚ"></div>
+            <div class="input-group"><label>Grade</label><input type="text" id="schGrade" value="8ኛ" style="width:70px"></div>
+            <div class="input-group"><label>Year</label><input type="text" id="schYear" value="2018 ዓ.ም" style="width:90px"></div>
+            <div class="input-group"><label>Subjects</label><input type="text" id="mSubjects" value="ሒሳብ, አማርኛ, እንግሊዝኛ, ሳይንስ"></div>
+            <button class="btn btn-blue" onclick="initSetup()">Setup (አዘጋጅ)</button>
         </div>
-        <div class="input-row">
-            <input type="text" id="subjects" placeholder="Subjects (e.g. Math, English, IT)">
-            <select id="semCount">
-                <option value="2">2 Semesters</option>
-                <option value="4">4 Semesters</option>
-            </select>
-        </div>
-        <div class="button-row">
-            <button class="btn btn-add" onclick="register()">Add Student</button>
-            <button class="btn btn-excel" onclick="exportToExcel()">Export Excel</button>
-            <button class="btn btn-undo" id="undoBtn" onclick="undo()" disabled>Undo</button>
+
+        <div id="entryForm" class="panel panel-two" style="display:none;">
+            <input type="hidden" id="editId" value="-1">
+            <div class="input-group"><label>Name (ስም)</label><input type="text" id="sName" placeholder="ሙሉ ስም"></div>
+            <div class="input-group"><label>Sex (ፆታ)</label><select id="sSex"><option value="M">M</option><option value="F">F</option></select></div>
+            <div class="input-group">
+                <label>Semester</label>
+                <select id="sSem" style="width:100px">
+                    <option value="1">1ኛ ወቅት</option>
+                    <option value="2">2ኛ ወቅት</option>
+                    <option value="3">3ኛ ወቅት</option>
+                    <option value="4">4ኛ ወቅት</option>
+                </select>
+            </div>
+            <div id="dynamicMarks" style="display: flex; gap: 8px;"></div>
+            <div class="input-group"><label>Conduct</label><input type="text" id="sCond" placeholder="A" style="width:55px"></div>
+            <button id="addBtn" class="btn btn-green" onclick="validateAndAdd()">Add (መዝግብ)</button>
         </div>
     </div>
+</div>
 
-    <div class="table-container">
-        <table id="mainTable">
-            <thead><tr id="headerRow"></tr></thead>
-            <tbody id="tableBody"></tbody>
+<div class="toolbar no-print">
+    <input type="text" id="searchInput" placeholder="Search by name..." onkeyup="render()" style="padding:8px; border-radius:4px; border:1px solid #ccc; width:200px;">
+    <button class="btn btn-blue" onclick="window.print()">Print (አትም)</button>
+    <button class="btn btn-red" style="margin-left: auto;" onclick="clearAllData()">Clear All</button>
+</div>
+
+<div class="main-viewport">
+    <div class="paper">
+        <table>
+            <thead id="tHead"></thead>
+            <tbody id="tBody"></tbody>
         </table>
     </div>
 </div>
 
-<div id="modal">
-    <div class="modal-content">
-        <span style="float:right; cursor:pointer; color:red; font-weight:bold;" onclick="closeModal()">CLOSE</span>
-        <div id="report-area"></div>
-        <button class="btn btn-add no-print" style="width:100%; margin-top:20px;" onclick="window.print()">Print Report</button>
+<div id="modalOverlay">
+    <div class="modal-box">
+        <div id="cardContent"></div>
+        <div style="text-align:center; margin-top:20px;" class="no-print">
+            <button class="btn btn-blue" onclick="window.print()">Print</button>
+            <button class="btn btn-red" onclick="document.getElementById('modalOverlay').style.display='none'">Close</button>
+        </div>
     </div>
 </div>
 
 <script>
-    let students = JSON.parse(localStorage.getItem('SchoolSystem_v18_8')) || [];
-    let history = [];
+    let students = JSON.parse(localStorage.getItem('rosterData')) || [];
+    let subjects = [];
 
-    // ለ Undo ተግባር መረጃን ሴቭ ማድረጊያ
-    function saveState() {
-        if (history.length > 15) history.shift();
-        history.push(JSON.stringify(students));
-        document.getElementById('undoBtn').disabled = false;
-    }
-
-    // ወደ ኋላ መመለሻ
-    function undo() {
-        if (history.length > 0) {
-            students = JSON.parse(history.pop());
-            if (history.length === 0) document.getElementById('undoBtn').disabled = true;
-            localStorage.setItem('SchoolSystem_v18_8', JSON.stringify(students));
-            render();
-        }
-    }
-
-    // ተማሪ መመዝገቢያ (ፆታ እና ክፍልን ጨምሮ)
-    function register() {
-        let name = document.getElementById('stdName').value.trim();
-        let sex = document.getElementById('stdSex').value;
-        let sClass = document.getElementById('stdClass').value.trim();
-        let sCount = parseInt(document.getElementById('semCount').value);
-        let subs = document.getElementById('subjects').value.split(',').map(s => s.trim()).filter(s => s !== "");
-        
-        if(!name || !sClass || subs.length === 0) { alert("Please fill all fields!"); return; }
-
-        saveState();
-        let semesterData = [];
-        for(let i=0; i<sCount; i++) semesterData.push({ semName: "Sem " + (i+1), grades: subs.map(s => ({ val: 0 })) });
-        
-        students.push({ id: Date.now(), name, sex, sClass, sCount, subs, semesterData });
-        saveAndRender();
-        document.getElementById('stdName').value = "";
-        document.getElementById('stdClass').value = "";
-    }
-
-    // ውጤት መቀየሪያ
-    function updateScore(stdId, sIdx, gIdx, newVal) {
-        saveState();
-        let std = students.find(s => s.id === stdId);
-        let val = parseFloat(newVal) || 0;
-        std.semesterData[sIdx].grades[gIdx].val = Math.min(100, Math.max(0, val));
-        saveAndRender();
-    }
-
-    // ዳታውን ሴቭ ማድረግና ድምር ማስላት
-    function saveAndRender() {
-        students.forEach(st => {
-            let totalAll = 0;
-            st.semesterData.forEach(sem => {
-                sem.total = sem.grades.reduce((a, b) => a + b.val, 0);
-                sem.avg = sem.total / st.subs.length;
-                totalAll += sem.total;
-            });
-            st.grandTotal = totalAll;
-            st.grandAvg = totalAll / (st.sCount * st.subs.length);
-        });
-        localStorage.setItem('SchoolSystem_v18_8', JSON.stringify(students));
+    function initSetup() {
+        subjects = document.getElementById('mSubjects').value.split(',').map(s => s.trim()).filter(s => s !== "");
+        document.getElementById('entryForm').style.display = "flex";
+        document.getElementById('dynamicMarks').innerHTML = subjects.map(s => `
+            <div class="input-group"><label>${s}</label><input type="number" class="mark-input" data-subject="${s}" min="0" max="100" style="width:55px"></div>
+        `).join('');
         render();
     }
 
-    // ደረጃ ማውጫ
-    function getRank(studentId, type, semIdx = null) {
-        let sorted = [...students].sort((a, b) => (type === 'annual' ? b.grandAvg - a.grandAvg : b.semesterData[semIdx].avg - a.semesterData[semIdx].avg));
-        return sorted.findIndex(s => s.id === studentId) + 1;
+    function validateAndAdd() {
+        let nameField = document.getElementById('sName');
+        let semField = document.getElementById('sSem');
+        let condField = document.getElementById('sCond');
+        let editId = document.getElementById('editId').value;
+
+        let name = nameField.value.trim();
+        let sex = document.getElementById('sSex').value;
+        let sem = parseInt(semField.value);
+        let conduct = condField.value.toUpperCase();
+
+        if (!name) return alert("እባክዎ የተማሪ ስም ያስገቡ!");
+
+        let marks = {}; let total = 0;
+        let inputs = document.querySelectorAll('.mark-input');
+        for(let i of inputs) {
+            let val = parseFloat(i.value);
+            if(isNaN(val) || val < 0 || val > 100) return alert(`${i.dataset.subject} ውጤት ከ 0-100 መሆን አለበት!`);
+            marks[i.dataset.subject] = val;
+            total += val;
+        }
+
+        if(editId === "-1") {
+            if(students.find(s => s.name === name && s.semNum == sem)) return alert("ይህ ወቅት አስቀድሞ ተመዝግቧል!");
+            students.push({ id: Date.now(), name, sex, semNum: sem, conduct, marks, total, avg: total/subjects.length });
+        } else {
+            let idx = students.findIndex(s => s.id == editId);
+            students[idx] = { id: parseFloat(editId), name, sex, semNum: sem, conduct, marks, total, avg: total/subjects.length };
+            document.getElementById('editId').value = "-1";
+            document.getElementById('addBtn').innerText = "Add (መዝግብ)";
+            document.getElementById('addBtn').className = "btn btn-green";
+        }
+        
+        localStorage.setItem('rosterData', JSON.stringify(students));
+        render();
+
+        if(sem < 4) {
+            semField.value = sem + 1;
+            document.querySelectorAll('.mark-input').forEach(i => i.value = "");
+            condField.value = "";
+        } else {
+            resetForm();
+            semField.value = "1";
+        }
     }
 
-    // ሰንጠረዡን የማሳያ ፋንክሽን
+    function resetForm() {
+        document.getElementById('sName').value = "";
+        document.getElementById('sCond').value = "";
+        document.querySelectorAll('.mark-input').forEach(i => i.value = "");
+    }
+
+    function editStudent(id) {
+        let s = students.find(x => x.id == id);
+        document.getElementById('sName').value = s.name;
+        document.getElementById('sSex').value = s.sex;
+        document.getElementById('sSem').value = s.semNum;
+        document.getElementById('sCond').value = s.conduct || "";
+        document.getElementById('editId').value = s.id;
+        
+        subjects.forEach(sub => {
+            let input = document.querySelector(`.mark-input[data-subject="${sub}"]`);
+            if(input) input.value = s.marks[sub];
+        });
+
+        document.getElementById('addBtn').innerText = "Update";
+        document.getElementById('addBtn').className = "btn btn-orange";
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function getRank(scoreList, score) {
+        let sorted = [...new Set(scoreList)].sort((a, b) => b - a);
+        let rank = sorted.indexOf(score) + 1;
+        // ጠቅላላ የተማሪዎች ብዛት ከ ውጤት ዝርዝሩ (scoreList) ይወሰዳል
+        return `${rank}/${scoreList.length}`;
+    }
+
     function render() {
-        let body = document.getElementById('tableBody');
-        let head = document.getElementById('headerRow');
-        if (students.length === 0) { body.innerHTML = "<tr><td colspan='30'>No Data</td></tr>"; return; }
+        const head = document.getElementById('tHead');
+        const body = document.getElementById('tBody');
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        if(subjects.length === 0) return;
 
-        let first = students[0];
-        // የሰንጠረዥ ርዕሶች (Headers)
-        let h = `<th>No</th><th>Name</th><th>Sex</th><th>Class</th><th>Term</th>`;
-        first.subs.forEach(s => h += `<th>${s}</th>`);
-        h += `<th>Total</th><th>Avg%</th><th>Rank</th><th class="no-print">Actions</th>`;
-        head.innerHTML = h;
-
+        head.innerHTML = `<tr><th>ID</th><th>Name (ስም)</th><th>Sex</th><th>Sem</th>${subjects.map(s => `<th>${s}</th>`).join('')}<th>Total</th><th>Avg</th><th>Rank</th><th class="no-print">Actions</th></tr>`;
+        
+        let allUniqueNames = [...new Set(students.map(s => s.name))];
+        let totalStudentsCount = allUniqueNames.length;
+        let filteredNames = allUniqueNames.filter(n => n.toLowerCase().includes(query));
+        
         body.innerHTML = "";
-        students.forEach((st, idx) => {
-            let rs = st.sCount + 1; // መርጅ የሚደረገው የረድፍ ብዛት
 
-            st.semesterData.forEach((sem, sIdx) => {
-                let row = `<tr>`;
-                if(sIdx === 0) {
-                    // ቁጥር፣ ስም፣ ፆታ እና ክፍል መርጅ (Merge) ሆነው ይገባሉ
-                    row += `<td class="meta-cell" rowspan="${rs}">${idx + 1}</td>`;
-                    row += `<td class="name-cell" rowspan="${rs}">${st.name}</td>`;
-                    row += `<td class="meta-cell" rowspan="${rs}">${st.sex}</td>`;
-                    row += `<td class="meta-cell" rowspan="${rs}">${st.sClass}</td>`;
-                }
-                
-                row += `<td>${sem.semName}</td>`;
-                sem.grades.forEach((g, gIdx) => {
-                    row += `<td><input class="score" type="number" value="${g.val}" onchange="updateScore(${st.id}, ${sIdx}, ${gIdx}, this.value)"></td>`;
-                });
-                
-                row += `<td style="background:#f0f7ff">${sem.total}</td>`;
-                row += `<td>${sem.avg.toFixed(1)}</td>`;
-                row += `<td style="color:var(--primary); font-weight:bold;">${getRank(st.id, 'term', sIdx)}</td>`;
-                
-                if(sIdx === 0) {
-                    row += `<td rowspan="${rs}" class="no-print">
-                        <button class="row-btn view-btn" onclick="viewCard(${st.id})">Report</button>
-                        <button class="row-btn del-btn" onclick="del(${st.id})">Del</button>
-                    </td>`;
-                }
-                body.innerHTML += row + `</tr>`;
-            });
+        filteredNames.forEach((name, idx) => {
+            let records = students.filter(s => s.name === name).sort((a,b) => a.semNum - b.semNum);
             
-            // የዓመታዊ ማጠቃለያ መስመር
-            let gr = `<tr class="grand-summary"><td>YEARLY</td>`;
-            st.subs.forEach((_, subIdx) => {
-                let sum = 0; for(let i=0; i<st.sCount; i++) sum += st.semesterData[i].grades[subIdx].val;
-                gr += `<td>${(sum/st.sCount).toFixed(1)}</td>`;
+            records.forEach((r, rIdx) => {
+                let semScores = students.filter(s => s.semNum == r.semNum).map(s => s.total);
+                let rankStr = getRank(semScores, r.total);
+                
+                let rowspanVal = records.length + 1;
+                let merged = rIdx === 0 ? `<td rowspan="${rowspanVal}">${idx+1}</td><td rowspan="${rowspanVal}">${r.name}</td><td rowspan="${rowspanVal}">${r.sex}</td>` : "";
+                
+                body.innerHTML += `
+                    <tr>
+                        ${merged}
+                        <td>S-${r.semNum}</td>
+                        ${subjects.map(s => `<td>${r.marks[s]}</td>`).join('')}
+                        <td>${r.total}</td>
+                        <td>${r.avg.toFixed(1)}</td>
+                        <td>${rankStr}</td>
+                        <td class="no-print">
+                            <div class="action-cell">
+                                <button class="btn btn-orange" onclick="editStudent(${r.id})">Edit</button>
+                                <button class="btn btn-red" onclick="deleteRow(${r.id})">X</button>
+                            </div>
+                        </td>
+                    </tr>`;
             });
-            gr += `<td>${st.grandTotal}</td><td>${st.grandAvg.toFixed(1)}%</td><td style="color:red;">${getRank(st.id, 'annual')}</td><td class="no-print"></td></tr>`;
-            body.innerHTML += gr;
+
+            // Annual Rank Logic
+            let annualTotalAvg = records.reduce((a,b) => a + b.total, 0) / records.length;
+            let annualAvgAvg = annualTotalAvg / subjects.length;
+            
+            let allAnnualAvgs = allUniqueNames.map(n => {
+                let rs = students.filter(s => s.name === n);
+                return (rs.reduce((sum, r) => sum + r.total, 0) / rs.length) / subjects.length;
+            });
+            let aRankStr = getRank(allAnnualAvgs, annualAvgAvg);
+
+            body.innerHTML += `
+                <tr class="annual-row">
+                    <td>Annual</td>
+                    ${subjects.map(s => {
+                        let sAvg = records.reduce((sum, r) => sum + r.marks[s], 0) / records.length;
+                        return `<td>${sAvg.toFixed(1)}</td>`;
+                    }).join('')}
+                    <td>${annualTotalAvg.toFixed(1)}</td>
+                    <td>${annualAvgAvg.toFixed(1)}</td>
+                    <td>${aRankStr}</td>
+                    <td class="no-print">
+                        <button class="btn btn-blue" onclick="showAnnualCard('${name}')">Card</button>
+                    </td>
+                </tr>`;
         });
     }
 
-    // ሪፖርት ካርድ ማሳያ
-    function viewCard(id) {
-        let st = students.find(s => s.id === id);
-        let html = `<div style="text-align:center;"><h3>Report Card: ${st.name}</h3><p>Sex: ${st.sex} | Class: ${st.sClass}</p></div><table style="width:100%; border-collapse:collapse; border:1px solid #333;"><thead><tr style="background:#eee"><th>Subject</th>${st.semesterData.map(s => `<th>${s.semName}</th>`).join('')}<th>Avg</th></tr></thead><tbody>`;
-        st.subs.forEach((sub, i) => {
-            let sum = 0; html += `<tr><td style="text-align:left; padding-left:5px;">${sub}</td>`;
-            st.semesterData.forEach(sem => { sum += sem.grades[i].val; html += `<td>${sem.grades[i].val}</td>`; });
-            html += `<td style="font-weight:bold;">${(sum/st.sCount).toFixed(1)}</td></tr>`;
+    function showAnnualCard(name) {
+        let recs = students.filter(s => s.name === name).sort((a,b) => a.semNum - b.semNum);
+        if(recs.length === 0) return;
+        
+        let allUniqueNames = [...new Set(students.map(s => s.name))];
+        let annualTotalAvg = recs.reduce((a,b) => a + b.total, 0) / recs.length;
+        let annualAvgFinal = annualTotalAvg / subjects.length;
+        let lastConduct = recs[recs.length - 1].conduct || "A";
+
+        let allAnnualAvgs = allUniqueNames.map(n => {
+            let rs = students.filter(s => s.name === n);
+            return (rs.reduce((a,b) => a + b.total, 0) / rs.length) / subjects.length;
         });
-        html += `</tbody></table>`;
-        document.getElementById('report-area').innerHTML = html;
-        document.getElementById('modal').style.display = 'flex';
+        let annualRankStr = getRank(allAnnualAvgs, annualAvgFinal);
+
+        let html = `
+            <div style="border:5px double #000; padding:20px; text-align:center; background:#fff;">
+                <h2 style="margin:0; color:#1a73e8;">${document.getElementById('schName').value}</h2>
+                <h3 style="margin:5px 0; text-decoration:underline;">Annual Progress Report Card</h3>
+                <div style="text-align:left; margin:15px 0; display:grid; grid-template-columns: 1fr 1fr; gap:10px; border:1px solid #000; padding:10px; font-size:14px;">
+                    <div><b>Name:</b> ${name}</div>
+                    <div><b>Grade:</b> ${document.getElementById('schGrade').value}</div>
+                    <div><b>Sex:</b> ${recs[0].sex}</div>
+                    <div><b>Year:</b> ${document.getElementById('schYear').value}</div>
+                </div>
+                <table class="card-table">
+                    <tr style="background:#f2f2f2">
+                        <th>Subject</th>
+                        ${recs.map(r => `<th>S-${r.semNum}</th>`).join('')}
+                        <th style="background:#e8f0fe">Annual</th>
+                    </tr>
+                    ${subjects.map(s => {
+                        let subSum = recs.reduce((sum, r) => sum + r.marks[s], 0);
+                        let subAvg = subSum / recs.length;
+                        return `<tr><td style="text-align:left; padding-left:10px;"><b>${s}</b></td>${recs.map(r => `<td>${r.marks[s]}</td>`).join('')}<td style="font-weight:bold;">${subAvg.toFixed(1)}</td></tr>`;
+                    }).join('')}
+                    <tr style="background:#f9f9f9; font-weight:bold;">
+                        <td>Total</td>
+                        ${recs.map(r => `<td>${r.total}</td>`).join('')}
+                        <td>${annualTotalAvg.toFixed(1)}</td>
+                    </tr>
+                    <tr style="background:#fffde7; font-weight:bold;">
+                        <td>Average</td>
+                        ${recs.map(r => `<td>${r.avg.toFixed(1)}</td>`).join('')}
+                        <td style="color:red; font-size:15px;">${annualAvgFinal.toFixed(2)}</td>
+                    </tr>
+                    <tr style="background:#eef; font-weight:bold;">
+                        <td>Rank</td>
+                        ${recs.map(r => {
+                            let semScores = students.filter(s => s.semNum == r.semNum).map(s => s.total);
+                            return `<td>${getRank(semScores, r.total)}</td>`;
+                        }).join('')}
+                        <td style="color:blue; font-size:15px;">${annualRankStr}</td>
+                    </tr>
+                    <tr style="background:#f0f4f8; font-weight:bold;">
+                        <td>Conduct</td>
+                        ${recs.map(r => `<td>${r.conduct || "-"}</td>`).join('')}
+                        <td style="color:green;">${lastConduct}</td>
+                    </tr>
+                </table>
+                <div style="margin-top:25px; display:flex; justify-content:space-between; padding:0 10px;">
+                    <div style="text-align:center; font-size:11px;"><span>________________</span><br><b>Class Teacher</b></div>
+                    <div style="text-align:center; font-size:11px;"><span>________________</span><br><b>Parent Sign</b></div>
+                    <div style="text-align:center; font-size:11px;"><span>________________</span><br><b>Director</b></div>
+                </div>
+            </div>`;
+        document.getElementById('cardContent').innerHTML = html;
+        document.getElementById('modalOverlay').style.display = 'flex';
     }
 
-    function closeModal() { document.getElementById('modal').style.display = 'none'; }
-    function exportToExcel() { 
-        let blob = new Blob([document.getElementById("mainTable").outerHTML], { type: "application/vnd.ms-excel" }); 
-        let a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "Students_List.xls"; a.click(); 
-    }
-    function del(id) { if(confirm("Delete?")) { saveState(); students = students.filter(s => s.id !== id); saveAndRender(); } }
-    render();
+    function deleteRow(id) { if(confirm("Are you sure?")) { students = students.filter(s => s.id != id); localStorage.setItem('rosterData', JSON.stringify(students)); render(); } }
+    function clearAllData() { if(confirm("WARNING: Delete all?")) { students = []; localStorage.clear(); render(); } }
+    window.onload = initSetup;
 </script>
 </body>
 </html>
