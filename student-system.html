@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+DOCTYPE html>
 <html lang="am">
 <head>
     <meta charset="UTF-8">
@@ -59,9 +59,9 @@
         <div id="entryForm" class="panel panel-two" style="display:none;">
             <input type="hidden" id="editId" value="-1">
             <div class="input-group"><label>Name (ስም)</label><input type="text" id="sName" placeholder="ሙሉ ስም"></div>
-            <div class="input-group"><label>Sex (ፆታ)</label><select id="sSex"><option value="M">M</option><option value="F">F</option></select></div>
+            <div class="input-group"><label>Sex (ፆታ)</label><select id="sSex"><option value="M">M/ወንድ</option><option value="F">F/ሴት</option></select></div>
             <div class="input-group">
-                <label>Semester</label>
+                <label>Semester (ወቅት)</label>
                 <select id="sSem" style="width:100px">
                     <option value="1">1ኛ ወቅት</option>
                     <option value="2">2ኛ ወቅት</option>
@@ -150,11 +150,14 @@
         localStorage.setItem('rosterData', JSON.stringify(students));
         render();
 
+        // --- ማሻሻያ፡ Auto-Increment Logic ---
         if(sem < 4) {
-            semField.value = sem + 1;
+            semField.value = sem + 1; // ወደሚቀጥለው ሴሚስተር ይሸጋገር
+            // ስሙ አይጥፋ፣ ውጤቶቹ ብቻ ይጽዱ
             document.querySelectorAll('.mark-input').forEach(i => i.value = "");
             condField.value = "";
         } else {
+            // 4ኛው ሴሚስተር ካለቀ ሁሉንም ያጽዳ
             resetForm();
             semField.value = "1";
         }
@@ -179,16 +182,14 @@
             if(input) input.value = s.marks[sub];
         });
 
-        document.getElementById('addBtn').innerText = "Update";
+        document.getElementById('addBtn').innerText = "Update (አሻሽል)";
         document.getElementById('addBtn').className = "btn btn-orange";
         window.scrollTo({top: 0, behavior: 'smooth'});
     }
 
     function getRank(scoreList, score) {
         let sorted = [...new Set(scoreList)].sort((a, b) => b - a);
-        let rank = sorted.indexOf(score) + 1;
-        // ጠቅላላ የተማሪዎች ብዛት ከ ውጤት ዝርዝሩ (scoreList) ይወሰዳል
-        return `${rank}/${scoreList.length}`;
+        return sorted.indexOf(score) + 1;
     }
 
     function render() {
@@ -199,10 +200,7 @@
 
         head.innerHTML = `<tr><th>ID</th><th>Name (ስም)</th><th>Sex</th><th>Sem</th>${subjects.map(s => `<th>${s}</th>`).join('')}<th>Total</th><th>Avg</th><th>Rank</th><th class="no-print">Actions</th></tr>`;
         
-        let allUniqueNames = [...new Set(students.map(s => s.name))];
-        let totalStudentsCount = allUniqueNames.length;
-        let filteredNames = allUniqueNames.filter(n => n.toLowerCase().includes(query));
-        
+        let filteredNames = [...new Set(students.filter(s => s.name.toLowerCase().includes(query)).map(s => s.name))];
         body.innerHTML = "";
 
         filteredNames.forEach((name, idx) => {
@@ -210,8 +208,7 @@
             
             records.forEach((r, rIdx) => {
                 let semScores = students.filter(s => s.semNum == r.semNum).map(s => s.total);
-                let rankStr = getRank(semScores, r.total);
-                
+                let rank = getRank(semScores, r.total);
                 let rowspanVal = records.length + 1;
                 let merged = rIdx === 0 ? `<td rowspan="${rowspanVal}">${idx+1}</td><td rowspan="${rowspanVal}">${r.name}</td><td rowspan="${rowspanVal}">${r.sex}</td>` : "";
                 
@@ -222,7 +219,7 @@
                         ${subjects.map(s => `<td>${r.marks[s]}</td>`).join('')}
                         <td>${r.total}</td>
                         <td>${r.avg.toFixed(1)}</td>
-                        <td>${rankStr}</td>
+                        <td>${rank}</td>
                         <td class="no-print">
                             <div class="action-cell">
                                 <button class="btn btn-orange" onclick="editStudent(${r.id})">Edit</button>
@@ -232,15 +229,13 @@
                     </tr>`;
             });
 
-            // Annual Rank Logic
             let annualTotalAvg = records.reduce((a,b) => a + b.total, 0) / records.length;
             let annualAvgAvg = annualTotalAvg / subjects.length;
-            
-            let allAnnualAvgs = allUniqueNames.map(n => {
+            let allAnnualAvgs = filteredNames.map(n => {
                 let rs = students.filter(s => s.name === n);
                 return (rs.reduce((sum, r) => sum + r.total, 0) / rs.length) / subjects.length;
             });
-            let aRankStr = getRank(allAnnualAvgs, annualAvgAvg);
+            let aRank = getRank(allAnnualAvgs, annualAvgAvg);
 
             body.innerHTML += `
                 <tr class="annual-row">
@@ -251,7 +246,7 @@
                     }).join('')}
                     <td>${annualTotalAvg.toFixed(1)}</td>
                     <td>${annualAvgAvg.toFixed(1)}</td>
-                    <td>${aRankStr}</td>
+                    <td>${aRank}</td>
                     <td class="no-print">
                         <button class="btn btn-blue" onclick="showAnnualCard('${name}')">Card</button>
                     </td>
@@ -263,16 +258,15 @@
         let recs = students.filter(s => s.name === name).sort((a,b) => a.semNum - b.semNum);
         if(recs.length === 0) return;
         
-        let allUniqueNames = [...new Set(students.map(s => s.name))];
         let annualTotalAvg = recs.reduce((a,b) => a + b.total, 0) / recs.length;
         let annualAvgFinal = annualTotalAvg / subjects.length;
         let lastConduct = recs[recs.length - 1].conduct || "A";
 
-        let allAnnualAvgs = allUniqueNames.map(n => {
+        let allUniqueNames = [...new Set(students.map(s => s.name))];
+        let annualRankFinal = getRank(allUniqueNames.map(n => {
             let rs = students.filter(s => s.name === n);
             return (rs.reduce((a,b) => a + b.total, 0) / rs.length) / subjects.length;
-        });
-        let annualRankStr = getRank(allAnnualAvgs, annualAvgFinal);
+        }), annualAvgFinal);
 
         let html = `
             <div style="border:5px double #000; padding:20px; text-align:center; background:#fff;">
@@ -311,7 +305,7 @@
                             let semScores = students.filter(s => s.semNum == r.semNum).map(s => s.total);
                             return `<td>${getRank(semScores, r.total)}</td>`;
                         }).join('')}
-                        <td style="color:blue; font-size:15px;">${annualRankStr}</td>
+                        <td style="color:blue; font-size:15px;">${annualRankFinal}</td>
                     </tr>
                     <tr style="background:#f0f4f8; font-weight:bold;">
                         <td>Conduct</td>
