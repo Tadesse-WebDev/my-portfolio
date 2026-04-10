@@ -15,4 +15,4 @@
 
 ---
 📫 **እንገናኝ:** - Email: tadessemisganaw4@gmail.com
-- LinkedIn: [ሊንክህን እዚህ ጋር አስገባ]
+- LinkedIn: https://tadesse-webdev.github.io/tadegge-dev/
